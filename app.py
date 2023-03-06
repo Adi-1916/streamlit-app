@@ -1,43 +1,65 @@
+# Import the libraries
 import streamlit as st
-from googletrans import Translator
-import random
+from sklearn.datasets import load_iris
+import pandas as pd
+import seaborn as sns
+import plotly.express as px
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Initialize the translator
-translator = Translator()
-def generate_random_language():
-    # Define a list of languages
-    languages = [
-        'af', 'sq', 'am', 'ar', 'hy', 'az', 'eu', 'be', 'bn', 'bs',
-        'bg', 'ca', 'ceb', 'ny', 'zh-cn', 'co', 'hr', 'cs', 'da', 'nl',
-        'en', 'eo', 'et', 'tl', 'fi', 'fr', 'fy', 'gl', 'ka', 'de', 'el',
-        'gu', 'ht', 'ha', 'haw', 'iw', 'hi', 'hmn', 'hu', 'is', 'ig', 'id',
-        'ga', 'it', 'ja', 'jw', 'kn', 'kk', 'km', 'rw', 'ko', 'ku', 'ky',
-        'lo', 'la', 'lv', 'lt', 'lb', 'mk', 'mg', 'ms', 'ml', 'mt', 'mi',
-        'mr', 'mn', 'my', 'ne', 'no', 'or', 'ps', 'fa', 'pl', 'pt', 'pa',
-        'ro', 'ru', 'sm', 'gd', 'sr', 'st', 'sn', 'sd', 'si', 'sk', 'sl',
-        'so', 'es', 'su', 'sw', 'sv', 'tg', 'ta', 'tt', 'te', 'th', 'tr',
-        'tk', 'uk', 'ur', 'ug', 'uz', 'vi', 'cy', 'xh', 'yi', 'yo', 'zu'
-    ]
-    # Choose a random language from the list
-    language_code = random.choice(languages)
-    return language_code
-def main():
-    # Set app title
-    st.title('English Translator')
+# Load the Iris dataset
+iris = load_iris()
+data = pd.DataFrame(iris.data, columns=iris.feature_names)
+data['target'] = iris.target
+target_names = iris.target_names
 
-    # Get user input
-    input_text = st.text_input('Enter text in English')
+# Set the title and sidebar
+st.title("Iris Dataset Visualizer")
+st.sidebar.title("Visualizations")
+st.sidebar.subheader("Choose a feature to plot")
 
-    # Check if input is not empty
-    if input_text:
-        # Generate a random language code
-        lang_code = generate_random_language()
+# Create a sidebar with checkboxes for the features
+feature_list = st.sidebar.multiselect(
+    "Features",
+    iris.feature_names,
+    default=["sepal length (cm)", "sepal width (cm)"]
+)
 
-        # Translate the input text to the random language
-        translated_text = translator.translate(input_text, dest=lang_code).text
+# Set random colors for the scatter plots
+np.random.seed(0)
+colors = sns.color_palette("bright", len(target_names))
 
-        # Display the translated text
-        st.success(f'Translated text: {translated_text}')
+# Create a scatter plot for each feature pair using Seaborn
+if len(feature_list) > 1:
+    for i in range(len(feature_list)):
+        for j in range(i + 1, len(feature_list)):
+            x_axis = feature_list[i]
+            y_axis = feature_list[j]
+            fig, ax = plt.subplots()
+            for k, target_name in enumerate(target_names):
+                sns.scatterplot(
+                    x=x_axis,
+                    y=y_axis,
+                    data=data[data['target'] == k],
+                    label=target_name,
+                    color=colors[k]
+                )
+            ax.set_xlabel(x_axis)
+            ax.set_ylabel(y_axis)
+            ax.legend()
+            st.pyplot(fig)
+else:
+    st.write("Please select at least two features.")
 
-if __name__ == '__main__':
-    main()
+# Create a scatter plot for each feature pair using Plotly
+if len(feature_list) > 1:
+    fig = px.scatter_matrix(
+        data,
+        dimensions=feature_list,
+        color="target",
+        color_discrete_sequence=colors,
+        title="Scatter Matrix"
+    )
+    st.plotly_chart(fig)
+else:
+    st.write("Please select at least two features.")
